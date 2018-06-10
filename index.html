@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>CAMP Alatoo Initiatives</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.45.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.45.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+    </style>
+</head>
+<body>
+
+<style>
+    #menu {
+        background: #fff;
+        position: absolute;
+        z-index: 1;
+        top: 10px;
+        right: 10px;
+        border-radius: 3px;
+        width: 120px;
+        border: 1px solid rgba(0,0,0,0.4);
+        font-family: 'Open Sans', sans-serif;
+    }
+
+    #menu a {
+        font-size: 13px;
+        color: #404040;
+        display: block;
+        margin: 0;
+        padding: 0;
+        padding: 10px;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(0,0,0,0.25);
+        text-align: center;
+    }
+
+    #menu a:last-child {
+        border: none;
+    }
+
+    #menu a:hover {
+        background-color: #f8f8f8;
+        color: #404040;
+    }
+
+    #menu a.active {
+        background-color: #3887be;
+        color: #ffffff;
+    }
+
+    #menu a.active:hover {
+        background: #3074a4;
+    }
+    .mapboxgl-popup {
+        max-width: 400px;
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    }
+</style>
+
+<nav id="menu"></nav>
+<div id="map"></div>
+
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoibWFkc2tpaWVyIiwiYSI6ImNqZ2lhYW05ZzBrOWEzMmxrY3AzYjVzNGMifQ.ul9h0PTne6n_HSio1ATTDw';
+var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v9',
+    zoom: 6.4,
+    center: [75.079,41.655]
+});
+
+map.on('load', function () {
+    map.addSource('bridges', {
+        type: 'geojson',
+        data: 'data/bridges.geojson'
+    });
+    map.addSource('forests', {
+        type: 'geojson',
+        data: 'data/forests.geojson'
+    });
+    map.addSource('kg_provinces', {
+        type: 'geojson',
+        data: 'data/kg_provinces.geojson'
+    });
+    map.addLayer({
+        'id': 'Forests',
+        'type': 'fill',
+        'source': 'forests',
+        'paint': {
+            'fill-color':'#ff00ff'
+            ,'fill-opacity':0.5
+            ,'fill-outline-color':"#000000"
+        }
+    });
+    map.addLayer({
+        'id': 'Forests-hover',
+        'type': 'fill',
+        'source': 'forests',
+        'layout': {
+            'visibility':'none'
+        }
+        ,'paint': {
+            'fill-color':'#ff00ff'
+            ,'fill-opacity':0.8
+            ,'fill-outline-color':"#000000"
+        }
+    });
+    
+    map.loadImage('https://cdn.iconscout.com/public/images/icon/premium/png-512/japanese-bridge-garden-wooden-footbridge-316d09b5c9c36487-512x512.png', function(error, image) {
+        if (error) throw error;
+        map.addImage('bridge', image);
+    map.addLayer({
+        'id': 'Bridges',
+        'type': 'circle',
+        'source': 'bridges',
+        'layout': {
+            //'icon-image':'bridge'
+            //,'icon-size': 0.07
+        },
+        'paint': {
+            'circle-radius': 8,
+            'circle-color': 'rgba(55,148,179,1)'
+        }
+    });
+});
+    map.addLayer({
+        'id': 'provinces',
+        'type': 'fill',
+        'source': 'kg_provinces',
+        'paint': {
+            'fill-opacity':0.1
+            ,'fill-outline-color':"#000000"
+        }
+    });
+
+    // When a click event occurs on a feature in the Bridges layer, open a popup at the
+    // location of the feature, with description HTML from its properties.
+    map.on('click', 'Bridges', function (e) {
+        var coordinates = e.features[0].geometry.coordinates.slice();
+        var properties = e.features[0].properties;
+        var holder=[];
+        var index = 0;
+        for (var property in properties){
+            var propertyItem = document.createElement('li');
+            // Set property's listitem's textcontent to key/value
+            propertyItem.textContent = property + ': ' + properties[property];
+            holder[index]=propertyItem.textContent;
+            index = index + 1;
+        }
+        holder = holder.join("<br>");//merges the lines of content and inserts a break in between each
+        console.log()
+        // Ensure that if the map is zoomed out such that multiple
+        // copies of the feature are visible, the popup appears
+        // over the copy being pointed to.
+        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+        }
+        new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(holder)
+            .addTo(map);
+    });
+
+    // Change the cursor to a pointer when the mouse is over the places layer.
+    map.on('mouseenter', 'Bridges', function () {
+        map.getCanvas().style.cursor = 'pointer';
+    });
+
+    // Change it back to a pointer when it leaves.
+    map.on('mouseleave', 'Bridges', function () {
+        map.getCanvas().style.cursor = '';
+    });
+
+    /// FORESTS
+    map.on('click', 'Forests', function (e) {
+        var coordinates = e.lngLat;
+        var properties = e.features[0].properties;
+        var holder=[];
+        var index = 0;
+        for (var property in properties){
+            var propertyItem = document.createElement('li');
+            // Set property's listitem's textcontent to key/value
+            propertyItem.textContent = property + ': ' + properties[property];
+            holder[index]=propertyItem.textContent;
+            index = index + 1;
+        }
+
+        holder = holder.join("<br>");//merges the lines of content and inserts a break in between each
+        // Ensure that if the map is zoomed out such that multiple
+        // copies of the feature are visible, the popup appears
+        // over the copy being pointed to.
+        while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+        }
+
+        new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(holder)
+            .addTo(map);
+    });
+
+    // Change the cursor to a pointer when the mouse is over the places layer.
+    map.on('mouseenter', 'Forests', function (e) {
+        map.getCanvas().style.cursor = 'pointer';
+    });
+    //hovering for Forest Polygons
+    map.on("mousemove", "Forests", function(e) {
+        map.setLayoutProperty('Forests-hover', 'visibility','visible');
+        map.setFilter("Forests-hover", ["==", "Leshoz", e.features[0].properties.Leshoz]);
+    });
+    // Change it back to a pointer when it leaves and reset hover layer visibility.
+    map.on('mouseleave', 'Forests', function () {
+        map.getCanvas().style.cursor = '';
+        map.setLayoutProperty('Forests-hover', 'visibility','none')
+        map.setFilter("Forests-hover", ["==", "Leshoz", ""]);
+    });
+
+});// end of map load
+
+var toggleableLayerIds = [ 'Bridges', 'Forests' ];
+
+for (var i = 0; i < toggleableLayerIds.length; i++) {
+    var id = toggleableLayerIds[i];
+
+    var link = document.createElement('a');
+    link.href = '#';
+    link.className = 'active';
+    link.textContent = id;
+
+    link.onclick = function (e) {
+        var clickedLayer = this.textContent;
+        e.preventDefault();
+        e.stopPropagation();
+
+        var visibility = map.getLayoutProperty(clickedLayer, 'visibility');
+
+        if (visibility === 'visible') {
+            map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+            this.className = '';
+        } else {
+            this.className = 'active';
+            map.setLayoutProperty(clickedLayer, 'visibility', 'visible');
+        }
+    };
+
+    var layers = document.getElementById('menu');
+    layers.appendChild(link);
+}
+
+</script>
+
+</body>
+</html>
